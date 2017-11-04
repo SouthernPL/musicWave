@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Music Wave</title>
+        <!-- 引入d3 -->
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>  
+		<style type="text/css">
+			.draw{
+				text-align:center;
+				position:relative;
+			}
+			.radarChart{
+				display:inline-block;
+			}
+			replay{
+				display:inline-block;
+				position: absolute;
+				left:50%;
+				bottom:0;
+				margin-left: -16px;
+
+			}
+		</style>
+		
+
+    </head>
+
+    <body>
+    	<div class="draw">
+    		<div class="radarChart"></div>
+    		<replay><a href="javascript:location.reload()" style="text-decoration: none">replay</a></replay>
+    	</div>
+		
+		
+		<script src="js/wavebackground.js"></script>
+
+		<script type="text/javascript">
+			var AudioContext = AudioContext || webkitAudioContext;
+			var context = new AudioContext;
+			
+			//加载音乐
+			 var audio = new Audio("./media/80000.mp3");
+			// var audio = new Audio("./JAEFOREAL.mp3");
+			//var audio = new Audio("./beautifulnow.mp3");
+		
+			//音频节点
+			var source = context.createMediaElementSource(audio);
+			var analyser = context.createAnalyser();
+			//音频分析
+			source.connect(analyser);
+			analyser.connect(context.destination);
+
+			//检测分辨率，获得缩放比例
+			// var screenHeight = document.body.clientHeight,
+			//     screenWidth = document.body.clientWidth;
+
+
+			analyser.fftSize = 4096;
+			var length = analyser.fftSize;
+			//创建数据容器
+			var dataArray = new Uint8Array(length);
+
+			// 准备播放音乐
+			audio.oncanplaythrough = function() {
+				audio.play();
+				draw();
+			};
+
+			
+
+			
+
+	     // 开始绘画
+	        function draw(){
+
+	    		// 配置初始背景框架参数
+
+				var margin = {top: 100, right: 100, bottom: 100, left: 100},
+					width = Math.min(700, window.innerWidth - 10) - margin.left - margin.right,
+					height = Math.min(width, window.innerHeight - margin.top - margin.bottom - 20);
+
+	        	//布置初始画布
+				var svg = d3.select(".radarChart").append("svg")
+				.attr("width",  width + margin.left + margin.right)
+				.attr("height", height + margin.top + margin.bottom)
+				.attr("class", "radarChart");
+
+
+	        	//彩蛋特效判定
+				var bool=false;
+				//彩蛋特效动画
+				var drawStar=null;
+				//绘图数据容器
+		        var data=[];
+		        var color = d3.scale.ordinal()
+						.range(["#EDC951","#CC333F","#FFFFFF"]);
+				var colorStar = d3.scale.ordinal()
+						.range(["#EDC951","#CC333F","#FFD700"]);
+						
+				var radarChartOptions = {
+					  w: width,
+					  h: height,
+					  margin: margin,
+					  maxValue: 0.5,
+					  levels: 5,
+					  roundStrokes: true,
+					  color: color,
+					  colorStar:colorStar
+					};
+				
+				// 逐帧刷新绘制动画
+			     function wave() {
+
+					requestAnimationFrame(wave);
+					// 接收音频分析数据
+					analyser.getByteFrequencyData(dataArray);
+					//音频数据加工
+					var data1 =[];
+					var data2 =[];
+					var data3 =[];
+					for(var i=1;i<6;i++){
+						data1.push({value:dataArray[i*50]/256*0.5});
+						data1.push({value:dataArray[i*50]/512*0.5});
+						data2.push({value:dataArray[i*50]/306*0.5});
+						data2.push({value:dataArray[i*50]/612*0.5});
+						data3.push({value:dataArray[i*50]/500*0.5});
+						data3.push({value:dataArray[i*50]/1000*0.5});
+						}
+
+					data=[data1,data2,data3];
+		            // console.log(data);
+					
+					// 传入参数绘制每一帧动画，并接收返回数据
+					dataRe = RadarChart(svg, data, radarChartOptions);
+					bool=dataRe.boolStar;
+					drawStar=dataRe.drawStar;
+					
+			    }
+			    // 开始绘画
+			    wave();
+		    	
+		    	//定时器监听彩蛋
+		    	setInterval(function(){
+		        	console.log(bool);
+		        	if(bool){
+		        		drawStar(width,height,margin);
+		        	}else{
+		        		svg.select(".starArea").remove();
+
+		        	}
+		        }, 3000)
+
+	        }
+
+	        
+       
+		</script>
+		
+    </body>
+</html>
